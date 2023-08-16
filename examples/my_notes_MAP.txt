@@ -1,0 +1,32 @@
+my_best_modal1,pt: 
+
+
+No improvement above threshold observed, incrementing counter. 
+Early stopping counter: 3/3
+Stopping training due to no improvement after 3 epochs
+Loading checkpoint with map: 0.80 from epoch 3
+Finishing training run
+
+
+# Fine Tune Model
+my_best_modal2,pt: (when I ran the training second time with gpu):
+
+eval_loss_epoch: 0.6782807656298921
+No improvement above threshold observed, incrementing counter. 
+Early stopping counter: 3/3
+Stopping training due to no improvement after 3 epochs
+Loading checkpoint with map: 0.8853106964663928 from epoch 7
+Finishing training run
+
+
+
+# 
+map: 0.9414672082257189
+
+ema_model_map: 0.9415275519257595
+
+ema_model_eval_loss_epoch: 0.8094457908140289
+
+eval_loss_epoch: 0.8094453247719341
+Loading checkpoint with map: 0.9513882996885279 from epoch 33
+Finishing training run
