@@ -73,11 +73,9 @@ def load_cars_df(annotations_file_path, images_path):
 class CarsDatasetAdaptor(Dataset):
     def __init__(
         self,
-        images_dir_path,
         annotations_dataframe,
         transforms=None,
     ):
-        self.images_dir_path = Path(images_dir_path)
         self.annotations_df = annotations_dataframe
         self.transforms = transforms
 
@@ -98,7 +96,7 @@ class CarsDatasetAdaptor(Dataset):
         file_name = image_info.image.values[0]
         assert image_id == image_info.image_id.values[0]
 
-        image = Image.open(self.images_dir_path / file_name).convert("RGB")
+        image = Image.open(file_name).convert("RGB")
         image = np.array(image)
 
         image_hw = image.shape[:2]

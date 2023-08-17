@@ -30,33 +30,36 @@ def create_yolov7_model(
     anchor_sizes_per_layer=None,
     num_channels=3,
     pretrained=True,
+    pretrainedWeights=""
 ):
     config = MODEL_CONFIGS[architecture](
         num_classes=num_classes,
         anchor_sizes_per_layer=anchor_sizes_per_layer,
         num_channels=num_channels,
     )
-
     model = Yolov7Model(model_config=config)
-
+    if pretrainedWeights == "":
+        state_dict = intersect_dicts(
+            torch.hub.load_state_dict_from_url(config["state_dict_path"], progress=False),
+            model.state_dict(),
+            exclude=["anchor"],
+        )
+        pretrainedWeights = config["state_dict_path"]
+    else:
+        checkpoint = torch.load(pretrainedWeights, map_location="cuda:0" if torch.cuda.is_available() else "cpu")
+        state_dict = checkpoint['model_state_dict']
     if pretrained:
-        state_dict_path = config["state_dict_path"]
-        if state_dict_path is None:
+        if state_dict is None:
             raise ValueError(
                 "Pretrained weights are not available for this architecture"
             )
         try:
             # load state dict
-            state_dict = intersect_dicts(
-                torch.hub.load_state_dict_from_url(state_dict_path, progress=False),
-                model.state_dict(),
-                exclude=["anchor"],
-            )
             model.load_state_dict(state_dict, strict=False)
             print(
-                f"Transferred {len(state_dict)}/{len(model.state_dict())} items from {state_dict_path}"
+                f"Transferred {len(state_dict)}/{len(model.state_dict())} items from {pretrainedWeights}"
             )
         except Exception as e:
-            print(f"Unable to load pretrained model weights from {state_dict_path}")
+            print(f"Unable to load pretrained model weights from {pretrainedWeights}")
             print(e)
     return model

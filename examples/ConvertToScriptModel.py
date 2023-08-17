@@ -41,8 +41,8 @@ def convertToTracedScriptModel(original_model):
         )
         traced_script_module = torch.jit.trace(original_model, generated_input, strict=False)
         # save the converted model
-        traced_script_module.save("ercp_traced_best_v4.pt")
-        model = torch.jit.load('ercp_traced_best_v4.pt')
+        traced_script_module.save("ercp_traced_best_tiny.pt")
+        model = torch.jit.load('ercp_traced_best_tiny.pt')
         model.to(device)
         model.eval()
 
@@ -80,7 +80,7 @@ best_model = create_yolov7_model('yolov7-tiny', num_classes=1, pretrained=False)
 
 
 # Loading Weights
-best_model_path= '/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/examples/v7_annotations_finetune_tiny.pt'
+best_model_path= '/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/examples/best_model_1.pt'
 checkpoint = torch.load(best_model_path, map_location='cpu')
 state_dict = checkpoint['model_state_dict']
 best_model.load_state_dict(state_dict)

@@ -19,196 +19,31 @@ import pandas as pd
 
 data_path = "../data/papilla"
 data_path = Path(data_path)
-images_path = data_path / "anatomical_model_papilla_1" # all_images
-annotations_file_path = data_path / "anatomical-model-papilla-860x860-1.json" # annotations_final.csv
+images_paths = [os.path.join(data_path, "anatomical-model-papilla-860x860-1", "anatomical_model_papilla_1"), os.path.join(data_path, "anatomical-model-papilla-860x860-2", "anatomical_model_papilla_2")] # all_images
+annotations_file_paths = [os.path.join(data_path,"anatomical-model-papilla-860x860-1", "anatomical-model-papilla-860x860-1.json"), os.path.join(data_path, "anatomical-model-papilla-860x860-2", "anatomical-model-papilla-860x860-2.json")] # annotations_final.csv
 
-
-# In[21]:
-
-
-str(images_path).split("\\")[-1]
-
-import cv2
-
-images_list= os.listdir(images_path)## Creatng list of images from the actual image directory
-print(f"Number of Images:{len(images_list)}")
-# Verify coordinate values--> Change these values according to the image
-####(tip- can use paint app to find the xmin,ymin,xmax,ymax)
-
-# xmin = 560  # example xmin value
-# ymin = 60  # example ymin value
-# xmax = 1680  # example xmax value
-# ymax = 1027  # example ymax value
-
-# images_list = os.listdir(images_path)
-# ## Defining the directory for croped images
-# cropped_images_dir  = data_path / str("cropped_images-of-"+str(images_path).split("\\")[-1]) 
-
-# if not os.path.exists(cropped_images_dir):
-#     os.makedirs(cropped_images_dir)
-#     print(f"Created directory: {cropped_images_dir}")
-    
-#     for image_name in images_list:
-#         # Load the image
-#         image_path = images_path / image_name
-        
-#         image = cv2.imread(str(image_path))
-
-#         # Perform cropping
-#         cropped_image = image[ymin:ymax, xmin:xmax]
-#         # Save the cropped image
-#         cropped_image_path = cropped_images_dir / image_name
-#         cv2.imwrite(str(cropped_image_path), cropped_image)
-# #         print(f"Cropped image saved: {cropped_image_path}")
-# #         break  # Uncomment this line if you want to crop only the first image for testing purposes
-
-# else:
-#     print(f"Directory already exists: {cropped_images_dir}")
-
-
-# ## Reading the Json file and creating the data frame
-
-# In[11]:
-
-
-# Load the annotations from the JSON file
 import json
-with open(annotations_file_path, 'r') as f:
-        data = json.load(f)
 
-# REmoving segmentation, area, iscrowd, extra keys from the annotations:
-keys_to_remove = ['segmentation', 'area', 'iscrowd', 'extra']
-
-for item in data['annotations']:
-    for key in keys_to_remove:
-        if key in item:
-            del item[key]
-
-
-# In[12]:
-
-
-data['annotations']
-
-
-# In[22]:
-
-
-import re
-import numpy as np
-annotations= data['annotations']       
-
-#Creating dataframe    
+#Creating dataframe
 xmin = 0  # example xmin value
 ymin = 0  # example ymin value
 xmax = 860  # example xmax value
 ymax = 860  # example ymax value
-my_df= {'image':[], 'xmin':[],'ymin':[], 'xmax':[], 'ymax':[], 'class_name':[], 
+my_df= {'image':[], 'xmin':[],'ymin':[], 'xmax':[], 'ymax':[], 'class_name':[],
         'has_annotation':[], 'image_id':[], 'class_id':[] }
-# Iterate over the images
-for image_filename in os.listdir(images_path):
-    # Find the annotation for the current image filename
-    new_image_filename = int(image_filename.split('.')[0])
-#     mayching_data = next((annotation for annotation in annotations if annotation['image_id'] == new_image_filename), None)
-    matching_data= [d for d in data['annotations'] if d['image_id']== new_image_filename]
-    ## Inputting data into dictionary for the dataframe building
-    my_df['image'].append(image_filename)
-    my_df['image_id'].append(np.nan)
-    
-#     print(matching_data)
-    
-    if len(matching_data)==0:
-        
-        my_df['class_name'].append('background')
-        my_df['class_id'].append(np.nan)
-        my_df['has_annotation'].append(False)## Im assuming if its a background (category id 168) there is no annotation
-
-        my_df['xmin'].append(np.nan)
-        my_df['ymin'].append(np.nan)
-        my_df['xmax'].append(np.nan)
-        my_df['ymax'].append(np.nan)
-        
-        
-    else:
-        
-        original_bbox= matching_data[0]['bbox']# The bbox is in the format [xmin, ymin, w, h]
-        
-        crop_width = xmax - xmin
-        crop_height = ymax - ymin
-        # Converting bbox according to the cropped image and converting the format to [xmin, ymin, xmax, ymax]
-        new_xmin = max(0, original_bbox[0] - xmin)
-        new_ymin = max(0, original_bbox[1] - ymin)
-        new_xmax = min(crop_width, original_bbox[0] + original_bbox[2] - xmin)
-        new_ymax = min(crop_height, original_bbox[1] + original_bbox[3] - ymin)
-
-#         print(bbox)
-        my_df['class_name'].append('papilla')
-        my_df['class_id'].append(0.0)
-        my_df['has_annotation'].append(True)
-    
-        my_df['xmin'].append(new_xmin)
-        my_df['ymin'].append(new_ymin)
-        my_df['xmax'].append(new_xmax)# The bounding boxes are in the format x,y,w,g, from coco annotater
-        my_df['ymax'].append(new_ymax)# Hence converting w & h to xmax, ymax 
-        
-final_df=  pd.DataFrame.from_dict(my_df)
-final_df.image_id= list(range(1, len(final_df)+1))
-final_df
 
 
-# In[23]:
-
-
-temp_df= final_df.iloc[0:15]
-temp_df
-
-
-# In[15]:
-
-
-# Visualization
-from PIL import Image, ImageDraw
-for i in temp_df.index.tolist():
-    my_img_path= images_path / temp_df.image[i]
-    # Load the image
-#     image_path = 'path/to/your/image.jpg'
-    image = Image.open(my_img_path)
-
-    # Create a drawing object
-    draw = ImageDraw.Draw(image)
-
-    # Define the BBox coordinates
-    xmin, ymin, xmax, ymax = temp_df['xmin'][i], temp_df['ymin'][i], temp_df['xmax'][i], temp_df['ymax'][i]
-    
-    print(my_img_path)
-    print(xmin, ymin, xmax, ymax)
-    # Draw the bounding box rectangle
-    draw.rectangle([(xmin, ymin), (xmax, ymax)], outline='red', width=2)
-
-    # Show or save the image
-    image.show()
-    # image.save('path/to/save/image_with_bounding_box.jpg')
-    break
-
-
-# ## Now continuing using the cropped image path and the annotation (dataframe)
-
-# In[16]:
-
-
-import pandas as pd
-import random
 
 def load_cars_df(df):
     # all_images = sorted(set([p.parts[-1] for p in images_path.iterdir()]))
     image_id_to_image = {i: im for i, im in zip(df.image_id, df.image)}
     image_to_image_id = {v: k for k, v, in image_id_to_image.items()}
-    
+
     class_id_to_label = dict(
         enumerate(df.query("has_annotation == True").class_name.unique())
     )
     class_label_to_id = {v: k for k, v in class_id_to_label.items()}
-        
+
     from sklearn.model_selection import train_test_split
     # first, split into X_train, X_valid_test, y_train, y_valid_test
     # `test_size=0.3` split into 70% and 30%
@@ -227,64 +62,127 @@ def load_cars_df(df):
     }
     return train_df, valid_df, test_df, lookups
 
+for i_sub in range(len(images_paths)):
+  annotations_file_path = annotations_file_paths[i_sub]
+  images_path = images_paths[i_sub]
+  with open(annotations_file_path, 'r') as f:
+          data = json.load(f)
 
-# We can now use this function to load our data:
+  # REmoving segmentation, area, iscrowd, extra keys from the annotations:
+  keys_to_remove = ['segmentation', 'area', 'iscrowd', 'extra']
 
-# In[17]:
+  for item in data['annotations']:
+      for key in keys_to_remove:
+          if key in item:
+              del item[key]
 
+  data['annotations']
 
-train_df, valid_df, test_df, lookups = load_cars_df(final_df)
+  import re
+  import numpy as np
+  annotations= data['annotations']
 
+  # Iterate over the images in different scenario
+  final_train_df = pd.DataFrame()
+  final_valid_df = pd.DataFrame()
+  final_test_df = pd.DataFrame()
+  lookups = {}
+  for image_filename in os.listdir(images_path):
+      #print(image_filename)
+      # Find the annotation for the current image filename
+      new_image_filename = int(image_filename.split('.')[0])
+  #     mayching_data = next((annotation for annotation in annotations if annotation['image_id'] == new_image_filename), None)
+      matching_data= [d for d in data['annotations'] if d['image_id']== new_image_filename]
+      ## Inputting data into dictionary for the dataframe building
+      my_df['image'].append(os.path.join(images_path,image_filename))
+      my_df['image_id'].append(np.nan)
 
-# In[18]:
+  #     print(matching_data)
 
+      if len(matching_data)==0:
 
-train_df.head()
+          my_df['class_name'].append('background')
+          my_df['class_id'].append(np.nan)
+          my_df['has_annotation'].append(False)## Im assuming if its a background (category id 168) there is no annotation
 
-
-# In[19]:
-
-
-valid_df.head()
-
-
-# In[20]:
-
-
-test_df.head()
-
-
-# In[21]:
-
-
-print(train_df.image.nunique(), valid_df.image.nunique(), test_df.image.nunique())
-
-
-# In[22]:
-
-
-# train_df[train_df['class_name']=='no_papilla']
-
-
-# To make it easier to associate predictions with an image, we have assigned each image a unique id; in this case it is just an incrementing integer count. Additionally, we have added an integer value to represent the classes that we want to detect, which is a single class - 'car' - in this case.
-# 
-# Generally, object detection models reserve `0` as the background class, so class labels should start from `1`. This is **not** the case for Yolov7, so we start our class encoding from `0`. For images that do not contain a car, we do not require a class id. We can confirm that this is the case by inspecting the lookups returned by our function.
-
-# In[23]:
-
-
-lookups.keys()
-
-
-# In[24]:
+          my_df['xmin'].append(np.nan)
+          my_df['ymin'].append(np.nan)
+          my_df['xmax'].append(np.nan)
+          my_df['ymax'].append(np.nan)
 
 
-lookups['class_label_to_id'], lookups['class_id_to_label']
+      else:
+
+          original_bbox= matching_data[0]['bbox']# The bbox is in the format [xmin, ymin, w, h]
+
+          crop_width = xmax - xmin
+          crop_height = ymax - ymin
+          # Converting bbox according to the cropped image and converting the format to [xmin, ymin, xmax, ymax]
+          new_xmin = max(0, original_bbox[0] - xmin)
+          new_ymin = max(0, original_bbox[1] - ymin)
+          new_xmax = min(crop_width, original_bbox[0] + original_bbox[2] - xmin)
+          new_ymax = min(crop_height, original_bbox[1] + original_bbox[3] - ymin)
+
+  #         print(bbox)
+          my_df['class_name'].append('papilla')
+          my_df['class_id'].append(0.0)
+          my_df['has_annotation'].append(True)
+
+          my_df['xmin'].append(new_xmin)
+          my_df['ymin'].append(new_ymin)
+          my_df['xmax'].append(new_xmax)# The bounding boxes are in the format x,y,w,g, from coco annotater
+          my_df['ymax'].append(new_ymax)# Hence converting w & h to xmax, ymax
+  df = pd.DataFrame.from_dict(my_df)
+  df.image_id = list(range(1, len(df) + 1))
+  train_df, valid_df, test_df, lookups = load_cars_df(df)
+  final_train_df = pd.concat([final_train_df, train_df])
+  final_valid_df = pd.concat([final_valid_df, valid_df])
+  final_test_df = pd.concat([final_test_df, test_df])
+
+temp_df= final_train_df.iloc[0:15]
+temp_df
+
+"""
+## Visualize Images from the Dataset"""
+
+from PIL import Image, ImageDraw
+for i in temp_df.index.tolist():
+    my_img_path= temp_df.image[i]
+    # Load the image
+#     image_path = 'path/to/your/image.jpg'
+    image = Image.open(my_img_path)
+
+    # Create a drawing object
+    draw = ImageDraw.Draw(image)
+
+    # Define the BBox coordinates
+    xmin, ymin, xmax, ymax = temp_df['xmin'][i], temp_df['ymin'][i], temp_df['xmax'][i], temp_df['ymax'][i]
+
+    print(my_img_path)
+    print(xmin, ymin, xmax, ymax)
+    # Draw the bounding box rectangle
+    draw.rectangle([(xmin, ymin), (xmax, ymax)], outline='red', width=2)
+
+    # Show or save the image
+    image.show()
+    #image.save('/content/drive/MyDrive/2023/Datasets/Anatomical_Model/image_with_bounding_box.jpg')
+    break
+
+
+final_train_df.head()
+
+final_valid_df.head()
+
+final_test_df.head()
+
+print(final_train_df.image.nunique(), final_valid_df.image.nunique(), final_test_df.image.nunique())
+
+# final_lookups.keys()
+#
+# final_lookups['class_label_to_id'], lookups['class_id_to_label']
 
 
 # Finally, let's see the number of images in each class for our training and validation sets. As an image can have multiple annotations, we need to make sure that we account for this when calculating our counts:
-
-# In[25]:
 
 
 print(f"Num. annotated images in training set: {len(train_df.query('has_annotation == True').image.unique())}")
@@ -297,45 +195,17 @@ print(f"Num. Background images in validation set: {len(valid_df.query('has_annot
 print(f"Total Num. images in validation set: {len(valid_df.image.unique())}")
 
 
-# ## Create a Dataset Adaptor
-
-# Usually, at this point, we would create a PyTorch dataset specific to the model that we shall be training. 
-# 
-# However, we often use the pattern of first creating a dataset 'adaptor' class, with the sole responsibility of wrapping the underlying data sources and loading this appropriately. This way, we can easily switch out adaptors when using different datasets, without changing any pre-processing logic which is specific to the model that we are training.
-# 
-# Therefore, let’s focus for now on creating a `CarsDatasetAdaptor` class, which converts the specific raw dataset format into an image and corresponding annotations. Additionally, let's load the image id that we assigned, as well as the height and width of our image, as they may be useful to us later on.
-# 
-# An implementation of this is presented below:
-
-# In[26]:
-
 
 from train_cars import CarsDatasetAdaptor
-
 
 # Notice that, for our background images, we are just returning an empty array for our bounding boxes and class ids.
 
 # Using this, we can confirm that the length of our dataset is the same as the total number of training images that we calculated earlier.
 
-# In[27]:
-
-
 # Make sure to plug in right variable for the path(images)
-train_ds = CarsDatasetAdaptor(images_path, train_df)
-valid_ds= CarsDatasetAdaptor(images_path, valid_df)
-test_ds= CarsDatasetAdaptor(images_path, test_df)
-
-
-# In[28]:
-
-
-train_ds
-
-
-# Now, we can use this to visualise some of our images, as demonstrated below.
-
-# In[29]:
-
+train_ds = CarsDatasetAdaptor(final_train_df)
+valid_ds= CarsDatasetAdaptor(final_valid_df)
+test_ds= CarsDatasetAdaptor(final_test_df)
 
 from yolov7.plotting import show_image
 
@@ -344,37 +214,20 @@ from yolov7.plotting import show_image
 
 # ### Transforms
 
-# In[30]:
-
-
 from yolov7.dataset import Yolov7Dataset
 from yolov7.dataset import create_yolov7_transforms
 
 
-# In[31]:
-
-
 target_image_size = 640
-
-
-# In[32]:
 
 
 train_yds = Yolov7Dataset(train_ds, transforms=create_yolov7_transforms(image_size=(target_image_size, target_image_size)))
 eval_yds= Yolov7Dataset(valid_ds, transforms=create_yolov7_transforms(image_size=(target_image_size, target_image_size)))
 test_yds= Yolov7Dataset(test_ds, transforms=create_yolov7_transforms(image_size=(target_image_size, target_image_size)))
 
+idx = 3
 
-# Using these transforms, we can see that our image has been resized to our target size and padding has been applied. The reason that padding is used is so that we can maintain the aspect ratio of the objects in the images, but have a common size for images in our dataset; enabling us to batch them efficiently!
-
-# ## Visualization
-
-# In[33]:
-
-
-idx = 5
-    
-image_tensor, labels, image_id, image_size = train_yds[idx]
+image_tensor, labels, image_id, image_size = eval_yds[idx]
 
 print(f'Image: {image_tensor.shape}')
 print(f'Labels: {labels}')
@@ -389,30 +242,7 @@ plt.show()
 print(f'Image id: {image_id}')
 print(f'Image size: {image_size}')
 
-
-# In[34]:
-
-
-# train_df[train_df['class_name']=='no_papilla']
-
-
-# ### Training from Scratch
-
-# In[35]:
-
-
 from yolov7.trainer import Yolov7Trainer
-
-
-# In[36]:
-
-
-# CHangint the path: this is the path wehre the trained weight (.pt) file is created
-#get_ipython().run_line_magic('cd', '"C:\\Users\\endo\\Desktop\\Yolov7-training-main\\Yolov7-training-main\\examples\\"')
-
-
-# In[37]:
-
 
 import random
 from functools import partial
@@ -446,14 +276,6 @@ from yolov7.mosaic import MosaicMixupDataset, create_post_mosaic_transform
 from yolov7.trainer import Yolov7Trainer, filter_eval_predictions
 from yolov7.utils import SaveBatchesCallback, Yolov7ModelEma
 
-
-# # Training code
-
-# In[38]:
-
-
-# Finetuning the model
-
 DATA_PATH =data_path
 
 def finetune_training(
@@ -462,23 +284,23 @@ def finetune_training(
     image_size: int = 640,
     pretrained: bool = True,
     num_epochs: int = 50,
-    batch_size: int = 8,
+    batch_size: int = 16,
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu',# Add this line to set the device to use
 ):
-    
-    
+
+
 ##############################################################################
     # CHecking on which device the training is going to run
     print(device)
     #Code added by Mike: print name of GPU
     #print(torch.cuda.get_device_name(torch.cuda.current_device()))
-    
+
 ##############################################################################
-    
+
 ##############################################################################
 
     num_classes= 1
-    
+
 ##############################################################################
 
     train_yds = Yolov7Dataset(
@@ -493,19 +315,19 @@ def finetune_training(
 
     # Create model, loss function and optimizer
     model = create_yolov7_model(
-        architecture="yolov7-tiny", num_classes=num_classes, pretrained=pretrained
-    ).to(device) # Dheeraj added .to(torch.device("cpu")) 
-    
+        architecture="yolov7-tiny", num_classes=num_classes, pretrained=pretrained, pretrainedWeights="../examples/best_model_1.pt"
+    ).to(device) # Dheeraj added .to(torch.device("cpu"))
+
 ##############################################################################
 
     loss_func = create_yolov7_loss(model, image_size=image_size)
-    
+
 ##############################################################################
 
     optimizer = torch.optim.SGD(
         model.parameters(), lr=0.01, momentum=0.9, nesterov=True
     )
-    
+
 ##############################################################################
 
     # create evaluation callback and trainer
@@ -518,7 +340,7 @@ def finetune_training(
             iou_threshold=0.2,
         )
     )
-    
+
 ##############################################################################
     # Create trainer and train
     trainer = Yolov7Trainer(
@@ -530,17 +352,17 @@ def finetune_training(
         ),
         callbacks=[
             calculate_map_callback,
-            SaveBestModelCallback(watch_metric="map", greater_is_better=True),
+            SaveBestModelCallback(watch_metric="eval_loss_epoch", greater_is_better=False),
             EarlyStoppingCallback(
-                early_stopping_patience=3,
-                watch_metric="map",
-                greater_is_better=True,
+                early_stopping_patience=10,
+                watch_metric="eval_loss_epoch",
+                greater_is_better=False,
                 early_stopping_threshold=0.001,
             ),
             *get_default_callbacks(progress_bar=True),
         ],
     )
-    
+
 ##############################################################################
 
 
@@ -557,14 +379,7 @@ def finetune_training(
         collate_fn=yolov7_collate_fn,
     )
 
-##############################################################################
-
-
-# In[39]:
-
-
 finetune_training(train_ds, valid_ds)
-
 
 # The notable differences between the "Training from Scratch" and "Fine-tuning" scenarios in the provided script:
 # 

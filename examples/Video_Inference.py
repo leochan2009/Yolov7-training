@@ -297,7 +297,7 @@ from yolov7.trainer import Yolov7Trainer, filter_eval_predictions
 
 
 # Defining model 
-best_model = create_yolov7_model('yolov7', num_classes=1, pretrained=True)
+best_model = create_yolov7_model('yolov7-tiny', num_classes=1, pretrained=True)
 best_model.eval();
 
 
@@ -305,7 +305,7 @@ best_model.eval();
 
 
 # Loading Weights
-best_model_path= '/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/examples/v7_annotations_finetune.pt'
+best_model_path= '/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/examples/best_model_1.pt'
 checkpoint = torch.load(best_model_path, map_location='cpu')
 state_dict = checkpoint['model_state_dict']
 best_model.load_state_dict(state_dict)
@@ -316,7 +316,7 @@ best_model.load_state_dict(state_dict)
 # In[33]:
 
 
-my_test_df= pd.read_csv("/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/data/papilla/annotations_testing.csv").drop(columns='Unnamed: 0').reset_index().drop(columns='index')
+my_test_df= pd.read_csv("/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/data/papilla/annotations_testing2.csv").drop(columns='Unnamed: 0').reset_index().drop(columns='index')
 
 
 # In[34]:
@@ -346,7 +346,7 @@ os.getcwd()
 # In[38]:
 
 
-my_test_ds= CarsDatasetAdaptor("/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/data/papilla/test_video_frames", final_df)
+my_test_ds= CarsDatasetAdaptor("/Users/longquanchen/Desktop/Work/Versatile/Yolov7-training-main/data/papilla/anatomical_model_papilla_1", final_df)
 
 
 # In[39]:
@@ -366,8 +366,8 @@ image_tensor, labels, image_id, image_size = test_yds[0]
 
 #List of image tensors
 image_tensor_collection= []
-startIndex = 500
-for i in range(startIndex,startIndex+200): # 874 maximum
+startIndex = 0
+for i in range(startIndex,startIndex+15): # 874 maximum
     image_tensor, labels, image_id, image_size = my_test_yds[i]
     image_tensor_collection.append(image_tensor)
 
